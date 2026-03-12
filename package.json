@@ -1,0 +1,10 @@
+{
+    "name": "looks-automation",
+    "version": "1.0.0",
+    "description": "Looks Salon Automation Dashboard",
+    "type": "module",
+    "scripts": {
+        "dev": "node start-dashboard.js",
+        "install:all": "cd frontend && npm install && cd ../backend && npm install"
+    }
+}

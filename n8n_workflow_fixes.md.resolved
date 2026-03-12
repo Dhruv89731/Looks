@@ -1,0 +1,259 @@
+# Complete Corrected Code – Both n8n Workflows
+
+---
+
+# ── WORKFLOW 1: AFTER-HOURS BOT ─────────────────────────
+
+## Node order (complete)
+```
+Webhook1 → Redis (push user msg) → Redis2 (get history) → Message a model2 → HTTP Request4 → Redis GET afterhours → Code: Append afterhours → Redis SET afterhours → Redis9 (push bot reply)
+```
+> Remove **Build Context1** — it references a missing node (`Code in JavaScript2`) and its output is never used.
+
+---
+
+## Config Fix 1 – Redis (push user message)
+Change **List** field from:
+```
+chat_history: {{ $('Webhook1').item.json.body.waId }}
+```
+to (remove the space after the colon):
+```
+chat_history:{{ $('Webhook1').item.json.body.waId }}
+```
+
+---
+
+## Config Fix 2 – Message a model2 (system prompt, last 2 lines)
+Change:
+```
+take the history from here based on which give reply:
+{{ $('Redis2').item.json.propertyName }}
+```
+to:
+```
+take the history from here based on which give reply:
+{{ $('Redis2').item.json.value }}
+```
+
+---
+
+## Config Fix 3 – Redis9 (push bot reply)
+Change **messageData** to:
+```json
+{
+  "time": "{{ $now }}",
+  "role": "assistant",
+  "content": "{{ $('Message a model2').item.json.output[0].content[0].text }}"
+}
+```
+
+---
+
+## NEW Node A – Redis GET afterhours
+Add after **HTTP Request4**, before **Redis9**.
+
+| Setting | Value |
+|---|---|
+| Operation | [get](file:///c:/Users/DhruvVaghasiya/Desktop/Backup/Looks%20Workflow/Looks%20automation/src/data/mockData.js#117-146) |
+| Key | `=afterhours:{{ $('Webhook1').item.json.body.waId }}:{{ $now.toFormat('yyyy-MM-dd') }}` |
+
+---
+
+## NEW Node B – Code: Append afterhours
+Add after **Redis GET afterhours**.
+
+```javascript
+const waId = $('Webhook1').item.json.body.waId;
+const customerMsg = $('Webhook1').item.json.body.text;
+const botReply = $('Message a model2').item.json.output[0].content[0].text;
+
+// Get today's date in IST
+const istDate = new Date(
+  new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+);
+const date = [
+  istDate.getFullYear(),
+  String(istDate.getMonth() + 1).padStart(2, '0'),
+  String(istDate.getDate()).padStart(2, '0'),
+].join('-');
+
+// Parse existing history or start fresh
+let history = [];
+try {
+  const existing = $json.value;
+  if (existing) history = JSON.parse(existing);
+  if (!Array.isArray(history)) history = [];
+} catch {
+  history = [];
+}
+
+// Append this conversation turn
+history.push({
+  time: new Date().toISOString(),
+  customer: customerMsg,
+  bot: botReply,
+});
+
+return [{
+  json: {
+    redisKey: `afterhours:${waId}:${date}`,
+    redisValue: JSON.stringify(history),
+  }
+}];
+```
+
+---
+
+## NEW Node C – Redis SET afterhours
+Add after **Code: Append afterhours**.
+
+| Setting | Value |
+|---|---|
+| Operation | `set` |
+| Key | `={{ $json.redisKey }}` |
+| Value | `={{ $json.redisValue }}` |
+
+Connect this to **Redis9** to continue storing the bot reply to chat history.
+
+---
+---
+
+# ── WORKFLOW 2: MORNING SUMMARY ──────────────────────────
+
+## Node order (complete)
+```
+Cron → Get Overnight KEYS → Code: Split Keys → Redis GET each key → Code: Build Conversation → Message a model3 → Code in JavaScript4 → HTTP Request3
+```
+> Delete the old **Code in JavaScript3** — replace with the 3 nodes below.
+
+---
+
+## REPLACE Code in JavaScript3 with these 3 nodes:
+
+### Node 1 – Code: Split Keys
+(Connects from Get Overnight Data1)
+
+```javascript
+// Compute yesterday in IST
+const now = new Date();
+const istDate = new Date(
+  now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+);
+istDate.setDate(istDate.getDate() - 1);
+
+const yesterday = [
+  istDate.getFullYear(),
+  String(istDate.getMonth() + 1).padStart(2, '0'),
+  String(istDate.getDate()).padStart(2, '0'),
+].join('-');
+
+// Redis KEYS returns array in $json.value
+const allKeys = $json.value || [];
+
+// Keep only yesterday's afterhours keys, skip empty-phone keys
+const keys = allKeys.filter(k =>
+  k.includes(`:${yesterday}`) && !k.includes('afterhours::')
+);
+
+if (keys.length === 0) return [];
+
+// One item per key → each goes through Redis GET separately
+return keys.map(key => ({
+  json: { redisKey: key, date: yesterday }
+}));
+```
+
+---
+
+### Node 2 – Redis GET each key (NEW node, after Split Keys)
+
+| Setting | Value |
+|---|---|
+| Operation | [get](file:///c:/Users/DhruvVaghasiya/Desktop/Backup/Looks%20Workflow/Looks%20automation/src/data/mockData.js#117-146) |
+| Key | `={{ $json.redisKey }}` |
+
+> This works because the after-hours workflow now stores data as a JSON string (not a list).
+
+---
+
+### Node 3 – Code: Build Conversation (NEW node, after Redis GET)
+
+```javascript
+const redisKey = $('Split Keys').item.json.redisKey;
+const date = $('Split Keys').item.json.date;
+
+// Extract phone from key: afterhours:PHONE:DATE
+const parts = redisKey.split(':');
+const phone = parts[1] || 'Unknown';
+
+// Parse the JSON array stored by the after-hours workflow
+let history = [];
+try {
+  const raw = $json.value;
+  if (raw) history = JSON.parse(raw);
+  if (!Array.isArray(history)) history = [];
+} catch {
+  history = [];
+}
+
+if (history.length === 0) return [];
+
+// Format for the AI summarizer
+const conversation = history
+  .map(m => `Time: ${m.time}\nCustomer: ${m.customer}\nBot: ${m.bot}`)
+  .join('\n\n');
+
+return [{
+  json: {
+    phone,
+    date,
+    conversation,
+    messageCount: history.length,
+  }
+}];
+```
+
+---
+
+## Fix – Message a model3 (OpenAI node)
+The current node sends NO user message content. Add a second response row:
+
+| Row | Role | Content |
+|---|---|---|
+| 1 | system | *(existing prompt — unchanged)* |
+| **2** | **user** | `={{ $json.conversation }}` |
+
+---
+
+## Fix – Code in JavaScript4
+Change **both** references from `$('Code in JavaScript3')` to `$('Build Conversation')`:
+
+```javascript
+// Line 12 – change this:
+const phone = $('Code in JavaScript3').item.json.phone;
+const date  = $('Code in JavaScript3').item.json.date;
+
+// To this:
+const phone = $('Build Conversation').item.json.phone;
+const date  = $('Build Conversation').item.json.date;
+```
+Everything else in Code in JavaScript4 stays the same.
+
+---
+
+## Fix – HTTP Request3 (send to dashboard)
+Update body parameters to send **all 7 fields**:
+
+| Name | Value |
+|---|---|
+| `phone` | `={{ $('Build Conversation').item.json.phone }}` |
+| `date` | `={{ $('Build Conversation').item.json.date }}` |
+| `intent` | `={{ $json.intent }}` |
+| `urgencyText` | `={{ $json.urgencyText }}` |
+| `urgencyNumber` | `={{ $json.urgencyNumber }}` |
+| `actionRequired` | `={{ $json.actionRequired }}` |
+| `fullSummary` | `={{ $json.fullSummary }}` |
+
+> [!IMPORTANT]
+> Make sure your local API server is running (`node server/index.js`) and ngrok is forwarding port 3001. Update the URL to your current ngrok URL.
