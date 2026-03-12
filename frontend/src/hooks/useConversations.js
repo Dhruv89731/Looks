@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { mockConversations } from '../data/mockData';
 
-const API_BASE = 'https://looks-api.76.13.243.185.sslip.io';
+const API_BASE = 'http://p8o84wcccws4kwwc8s4kkcsg.76.13.243.185.sslip.io';
 
 /**
  * Fetches conversations from the real API.
