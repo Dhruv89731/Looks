@@ -1,6 +1,6 @@
-import { Search, Filter, ArrowUpDown, Eye, Phone, Calendar, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, Eye, Phone, Calendar, ChevronUp, ChevronDown, Clock, CheckCircle2 } from 'lucide-react';
 import { getUrgencyConfig } from '../data/mockData';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 function UrgencyBadge({ text }) {
     const config = getUrgencyConfig(text);
@@ -15,10 +15,31 @@ function UrgencyBadge({ text }) {
     );
 }
 
+function StatusBadge({ status }) {
+    if (status === 'unattended') {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200">
+                <Clock className="w-2.5 h-2.5" />
+                Unattended
+            </span>
+        );
+    }
+    if (status === 'active') {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="w-2.5 h-2.5" />
+                Active
+            </span>
+        );
+    }
+    return null;
+}
+
 export default function ConversationTable({
     conversations,
     search, setSearch,
     urgencyFilter, setUrgencyFilter,
+    statusFilter, setStatusFilter,
     dateFilter, setDateFilter,
     sortOrder, setSortOrder,
     onView,
@@ -29,7 +50,7 @@ export default function ConversationTable({
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                 <div className="flex flex-wrap gap-3 items-center">
                     {/* Search */}
-                    <div className="relative flex-1 min-w-[200px] max-w-xs">
+                    <div className="relative flex-1 min-w-[180px] max-w-xs">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
@@ -46,12 +67,25 @@ export default function ConversationTable({
                         <select
                             value={urgencyFilter}
                             onChange={e => setUrgencyFilter(e.target.value)}
-                            className="input-field pl-9 pr-8 appearance-none cursor-pointer min-w-[150px]"
+                            className="input-field pl-9 pr-8 appearance-none cursor-pointer min-w-[140px]"
                         >
                             <option value="all">All Urgencies</option>
                             <option value="high">🔴 High</option>
                             <option value="medium">🟠 Medium</option>
                             <option value="low">🟢 Low</option>
+                        </select>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="relative">
+                        <select
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value)}
+                            className="input-field pr-8 appearance-none cursor-pointer min-w-[140px]"
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="unattended">🔔 Unattended</option>
+                            <option value="active">✅ Active</option>
                         </select>
                     </div>
 
@@ -62,7 +96,7 @@ export default function ConversationTable({
                             type="date"
                             value={dateFilter}
                             onChange={e => setDateFilter(e.target.value)}
-                            className="input-field pl-9 cursor-pointer min-w-[170px]"
+                            className="input-field pl-9 cursor-pointer min-w-[160px]"
                         />
                     </div>
 
@@ -95,51 +129,59 @@ export default function ConversationTable({
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-gray-100 bg-gray-50/30">
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                    Customer
-                                </th>
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                    Date
-                                </th>
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Intent
-                                </th>
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                    Urgency
-                                </th>
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Recommended Action
-                                </th>
-                                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                                    Details
-                                </th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Customer</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Contact</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Intent</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Urgency</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Recommended Action</th>
+                                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Details</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {conversations.map(conv => (
                                 <tr
                                     key={conv.id}
-                                    className="table-row-hover group"
+                                    className={`table-row-hover group ${conv.status === 'unattended' ? 'bg-violet-50/30' : ''}`}
                                     onClick={() => onView(conv)}
                                 >
                                     {/* Phone */}
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center flex-shrink-0">
-                                                <Phone className="w-3.5 h-3.5 text-accent" />
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${conv.status === 'unattended' ? 'bg-violet-100' : 'bg-brand-50'}`}>
+                                                <Phone className={`w-3.5 h-3.5 ${conv.status === 'unattended' ? 'text-violet-500' : 'text-accent'}`} />
                                             </div>
-                                            <span className="font-medium text-gray-900 text-sm">{conv.phone}</span>
+                                            <div>
+                                                <span className="font-medium text-gray-900 text-sm block">{conv.phone}</span>
+                                                {conv.summaryHistory && conv.summaryHistory.length > 1 && (
+                                                    <span className="text-[10px] text-gray-400 font-medium">{conv.summaryHistory.length} contacts</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
 
-                                    {/* Date */}
+                                    {/* Last Contact */}
                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500 text-sm">
-                                        {format(new Date(conv.date + 'T00:00:00'), 'dd MMM yyyy')}
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-xs text-gray-700 font-medium">
+                                                {conv.lastContactAt
+                                                    ? formatDistanceToNow(new Date(conv.lastContactAt), { addSuffix: true })
+                                                    : format(new Date(conv.date + 'T00:00:00'), 'dd MMM yyyy')}
+                                            </span>
+                                            <span className="text-[10px] text-gray-400">
+                                                {conv.date && format(new Date(conv.date + 'T00:00:00'), 'dd MMM yyyy')}
+                                            </span>
+                                        </div>
                                     </td>
 
                                     {/* Intent */}
-                                    <td className="px-6 py-4 max-w-[250px]">
+                                    <td className="px-6 py-4 max-w-[220px]">
                                         <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">{conv.intent}</p>
+                                    </td>
+
+                                    {/* Status */}
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <StatusBadge status={conv.status} />
                                     </td>
 
                                     {/* Urgency */}
@@ -148,7 +190,7 @@ export default function ConversationTable({
                                     </td>
 
                                     {/* Action */}
-                                    <td className="px-6 py-4 max-w-[220px]">
+                                    <td className="px-6 py-4 max-w-[200px]">
                                         <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">{conv.actionRequired}</p>
                                     </td>
 

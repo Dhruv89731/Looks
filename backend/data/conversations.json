@@ -2,34 +2,77 @@
   {
     "id": 1773212996197,
     "phone": "+91 99887 76655",
+    "conversationId": "+91 99887 76655",
     "date": "2026-03-11",
     "intent": "Customer wants to book a bridal appointment for March 20th.",
     "urgencyText": "High",
     "urgencyNumber": 3,
     "actionRequired": "Call this customer immediately to confirm the bridal slot.",
     "fullSummary": "Customer called at 9PM asking about bridal package for March 20th wedding day. Very urgent.",
-    "receivedAt": "2026-03-11T07:09:56.197Z"
+    "status": "unattended",
+    "lastContactAt": "2026-03-12T07:09:56.197Z",
+    "receivedAt": "2026-03-11T07:09:56.197Z",
+    "summaryHistory": [
+      {
+        "timestamp": "2026-03-12T07:09:56.197Z",
+        "intent": "Customer wants to book a bridal appointment for March 20th.",
+        "urgencyText": "High",
+        "actionRequired": "Call this customer immediately to confirm the bridal slot.",
+        "fullSummary": "Customer called at 9PM asking about bridal package for March 20th wedding day. Very urgent."
+      },
+      {
+        "timestamp": "2026-03-11T07:09:56.197Z",
+        "intent": "Inquiry about bridal package pricing.",
+        "urgencyText": "Medium",
+        "actionRequired": "Send pricing details via WhatsApp.",
+        "fullSummary": "Customer first called asking about bridal package options and rough pricing."
+      }
+    ]
   },
   {
     "id": 1773228295722,
     "phone": "919909063333",
+    "conversationId": "919909063333",
     "date": "2026-03-10",
     "intent": "The customer is trying to inquire about services offered by Looks Salon.",
     "urgencyText": "Low",
     "urgencyNumber": 1,
     "actionRequired": "Staff should review messages in the morning and respond to the customer's inquiry.",
-    "fullSummary": "Customer Intent:\n- The customer is trying to inquire about services offered by Looks Salon.\n\nUrgency:\n- Low\n\nAction Required:\n- Staff should review messages in the morning and respond to the customer's inquiry.\n\nKey Notes:\n- Customer repeated contact may indicate they want a prompt response when the salon opens.",
-    "receivedAt": "2026-03-11T11:24:55.722Z"
+    "fullSummary": "Customer called asking about general salon services. Low urgency follow-up needed.",
+    "status": "active",
+    "lastContactAt": "2026-03-11T11:24:55.722Z",
+    "receivedAt": "2026-03-11T11:24:55.722Z",
+    "summaryHistory": [
+      {
+        "timestamp": "2026-03-11T11:24:55.722Z",
+        "intent": "The customer is trying to inquire about services offered by Looks Salon.",
+        "urgencyText": "Low",
+        "actionRequired": "Staff should review messages in the morning and respond to the customer's inquiry.",
+        "fullSummary": "Customer called asking about general salon services. Low urgency follow-up needed."
+      }
+    ]
   },
   {
     "id": 1773228501834,
     "phone": "919909063334",
+    "conversationId": "919909063334",
     "date": "2026-03-10",
     "intent": "The customer is trying to inquire about services at Looks Salon.",
     "urgencyText": "Low",
     "urgencyNumber": 1,
     "actionRequired": "Staff should follow up with the customer in the morning to understand their specific service inquiry.",
-    "fullSummary": "Customer Intent:\n- The customer is trying to inquire about services at Looks Salon.\n\nUrgency:\n- Low\n\nAction Required:\n- Staff should follow up with the customer in the morning to understand their specific service inquiry.\n\nKey Notes:\n- Make sure to check for any specific preferred date and time in the follow-up.",
-    "receivedAt": "2026-03-11T11:28:21.834Z"
+    "fullSummary": "Customer called asking about specific salon services. Needs morning followup.",
+    "status": "unattended",
+    "lastContactAt": "2026-03-11T11:28:21.834Z",
+    "receivedAt": "2026-03-11T11:28:21.834Z",
+    "summaryHistory": [
+      {
+        "timestamp": "2026-03-11T11:28:21.834Z",
+        "intent": "The customer is trying to inquire about services at Looks Salon.",
+        "urgencyText": "Low",
+        "actionRequired": "Staff should follow up with the customer in the morning to understand their specific service inquiry.",
+        "fullSummary": "Customer called asking about specific salon services. Needs morning followup."
+      }
+    ]
   }
 ]

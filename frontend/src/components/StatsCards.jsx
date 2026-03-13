@@ -1,12 +1,21 @@
-import { MessageSquare, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
+import { MessageSquare, AlertCircle, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 const cards = [
     {
         key: 'total',
         label: 'Total Conversations',
-        sublabel: 'Today',
+        sublabel: 'Active conversations',
         icon: MessageSquare,
         gradient: 'from-brand-500 to-brand-600',
+        iconBg: 'bg-white/20',
+        textColor: 'text-white',
+    },
+    {
+        key: 'unattended',
+        label: 'Queries Unattended',
+        sublabel: 'Awaiting response',
+        icon: Clock,
+        gradient: 'from-violet-500 to-purple-600',
         iconBg: 'bg-white/20',
         textColor: 'text-white',
     },
@@ -41,7 +50,7 @@ const cards = [
 
 export default function StatsCards({ stats }) {
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {cards.map(({ key, label, sublabel, icon: Icon, gradient, iconBg, textColor }) => (
                 <div
                     key={key}
@@ -56,7 +65,7 @@ export default function StatsCards({ stats }) {
                             <Icon className={`w-5 h-5 ${textColor}`} />
                         </div>
                         <div className={`text-3xl font-bold ${textColor} leading-none mb-1`}>
-                            {stats[key]}
+                            {stats[key] ?? 0}
                         </div>
                         <div className={`text-sm font-semibold ${textColor} opacity-90`}>{label}</div>
                         <div className={`text-xs ${textColor} opacity-70 mt-0.5`}>{sublabel}</div>

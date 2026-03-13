@@ -7,7 +7,7 @@ import ConversationDrawer from '../components/ConversationDrawer';
 import DailySummaryCard from '../components/DailySummaryCard';
 import { useConversations } from '../hooks/useConversations';
 
-export default function ConversationDashboard() {
+export default function ConversationDashboard({ onLogout }) {
     const [selectedConversation, setSelectedConversation] = useState(null);
 
     const {
@@ -15,12 +15,23 @@ export default function ConversationDashboard() {
         loading, error, usingMock, refetch,
         search, setSearch,
         urgencyFilter, setUrgencyFilter,
+        statusFilter, setStatusFilter,
         dateFilter, setDateFilter,
         sortOrder, setSortOrder,
+        markAsResolved,
+        markAsViewed,
     } = useConversations();
 
     const today = format(new Date(), 'EEEE, dd MMMM yyyy');
     const isLive = !usingMock && !error;
+
+    const handleView = (conv) => {
+        setSelectedConversation(conv);
+        // Mark as viewed if it was unattended
+        if (conv.status === 'unattended') {
+            markAsViewed(conv.id);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#F9FAFB]">
@@ -66,6 +77,14 @@ export default function ConversationDashboard() {
                             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                             <span className="hidden sm:inline">Refresh</span>
                         </button>
+
+                        <button
+                            onClick={onLogout}
+                            className="px-3 py-1.5 rounded-lg bg-gray-100/80 hover:bg-red-50 text-gray-600 hover:text-red-600 border border-transparent hover:border-red-100 text-xs font-bold transition-all duration-200"
+                            title="Sign out"
+                        >
+                            Logout
+                        </button>
                     </div>
                 </div>
             </header>
@@ -78,7 +97,7 @@ export default function ConversationDashboard() {
                         <div>
                             <span className="font-semibold">API server offline</span>
                             <span className="text-amber-700"> – showing demo data. Start the server: </span>
-                            <code className="text-xs bg-amber-100 px-1.5 py-0.5 rounded font-mono">node server/index.js</code>
+                            <code className="text-xs bg-amber-100 px-1.5 py-0.5 rounded font-mono">node start-dashboard.js</code>
                         </div>
                     </div>
                 </div>
@@ -92,7 +111,7 @@ export default function ConversationDashboard() {
                         Conversation Dashboard
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">
-                        Customer inquiries handled by the AI receptionist · After-hours calls
+                        Customer inquiries handled by the AI receptionist · Sorted by most recent contact
                     </p>
                 </div>
 
@@ -108,11 +127,11 @@ export default function ConversationDashboard() {
                 <StatsCards stats={stats} />
 
                 {/* Main Grid: Table + Sidebar */}
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6">
                     {/* Conversation Table */}
                     <div className="overflow-hidden">
                         <div className="flex items-center gap-2 mb-3">
-                            <h3 className="text-sm font-bold text-gray-800">All Conversations</h3>
+                            <h3 className="text-sm font-bold text-gray-800">Active Conversations</h3>
                             <span className="px-2 py-0.5 rounded-full bg-brand-50 text-accent text-xs font-semibold border border-brand-100">
                                 {conversations.length}
                             </span>
@@ -121,14 +140,20 @@ export default function ConversationDashboard() {
                                     Demo Data
                                 </span>
                             )}
+                            {stats.unattended > 0 && (
+                                <span className="px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold border border-violet-200">
+                                    {stats.unattended} unattended
+                                </span>
+                            )}
                         </div>
                         <ConversationTable
                             conversations={conversations}
                             search={search} setSearch={setSearch}
                             urgencyFilter={urgencyFilter} setUrgencyFilter={setUrgencyFilter}
+                            statusFilter={statusFilter} setStatusFilter={setStatusFilter}
                             dateFilter={dateFilter} setDateFilter={setDateFilter}
                             sortOrder={sortOrder} setSortOrder={setSortOrder}
-                            onView={setSelectedConversation}
+                            onView={handleView}
                         />
                     </div>
 
@@ -141,20 +166,20 @@ export default function ConversationDashboard() {
                             <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Quick Guide</h4>
                             <ul className="space-y-2.5 text-xs text-gray-600">
                                 <li className="flex items-start gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0 mt-1.5" />
+                                    <span><strong className="text-gray-800">Unattended</strong> – new contact, not yet reviewed</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
+                                    <span><strong className="text-gray-800">Active</strong> – reviewed, being followed up</span>
+                                </li>
+                                <li className="flex items-start gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 mt-1.5" />
                                     <span><strong className="text-gray-800">High urgency</strong> – call back immediately</span>
                                 </li>
                                 <li className="flex items-start gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1.5" />
-                                    <span><strong className="text-gray-800">Medium urgency</strong> – follow up today</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
-                                    <span><strong className="text-gray-800">Low urgency</strong> – handle when free</span>
-                                </li>
-                                <li className="flex items-start gap-2">
                                     <span className="w-3 h-3 text-accent flex-shrink-0 mt-0.5">→</span>
-                                    <span>Click any row to see the full conversation summary</span>
+                                    <span>Click any row to see conversation history</span>
                                 </li>
                             </ul>
                         </div>
@@ -172,6 +197,7 @@ export default function ConversationDashboard() {
                                 <div className="text-gray-400 pl-4 font-mono text-[10px] leading-relaxed">
                                     POST /api/n8n<br />
                                     GET  /api/conversations<br />
+                                    PATCH /api/conversations/:id/resolve<br />
                                     Port: 3001
                                 </div>
                             </div>
@@ -184,6 +210,7 @@ export default function ConversationDashboard() {
             <ConversationDrawer
                 conversation={selectedConversation}
                 onClose={() => setSelectedConversation(null)}
+                onResolve={markAsResolved}
             />
         </div>
     );
