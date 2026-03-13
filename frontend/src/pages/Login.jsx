@@ -13,9 +13,11 @@ export default function Login({ onLogin }) {
         setLoading(true);
 
         try {
-            // Updated API URL to use the correct local server if needed, 
-            // but assuming relative path works if proxied, or we fallback to localhost:3001
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            // Priority:
+            // 1. Environment variable (VITE_API_URL) if set in Coolify
+            // 2. Production URL on sslip.io
+            // 3. Current origin (if proxying)
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://p8o84wcccws4kwwc8s4kkcsg.76.13.243.185.sslip.io';
             
             const response = await fetch(`${baseUrl}/api/login`, {
                 method: 'POST',
